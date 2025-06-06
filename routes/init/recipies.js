@@ -8,37 +8,35 @@ module.exports = (pool) => {
         try {
             await client.query('BEGIN');
 
-            await client.query(`
-                CREATE TABLE IF NOT EXISTS recipes (
-                    id SERIAL PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    instructions TEXT
-                );
-                CREATE TABLE IF NOT EXISTS ingredients (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS quantities (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS recipe_ingredients (
-                    recipe_id INT REFERENCES recipes(id),
-                    ingredient_id INT REFERENCES ingredients(id),
-                    quantity_amount NUMERIC CHECK (quantity_amount > 0),
-                    quantity_id INT REFERENCES quantities(id),
-                    PRIMARY KEY (recipe_id, ingredient_id)
-                );
-                CREATE TABLE IF NOT EXISTS categories (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS recipe_categories (
-                    recipe_id INT REFERENCES recipes(id) ON DELETE CASCADE,
-                    category_id INT REFERENCES categories(id) ON DELETE CASCADE,
-                    PRIMARY KEY (recipe_id, category_id)
-                );
-            `);
+            await client.query(`CREATE TABLE IF NOT EXISTS recipes (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                instructions TEXT
+            );`);
+            await client.query(`CREATE TABLE IF NOT EXISTS ingredients (
+                id SERIAL PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL
+            );`);
+            await client.query(`CREATE TABLE IF NOT EXISTS quantities (
+                id SERIAL PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL
+            );`);
+            await client.query(`CREATE TABLE IF NOT EXISTS recipe_ingredients (
+                recipe_id INT REFERENCES recipes(id),
+                ingredient_id INT REFERENCES ingredients(id),
+                quantity_amount NUMERIC CHECK (quantity_amount > 0),
+                quantity_id INT REFERENCES quantities(id),
+                PRIMARY KEY (recipe_id, ingredient_id)
+            );`);
+            await client.query(`CREATE TABLE IF NOT EXISTS categories (
+                id SERIAL PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL
+            );`);
+            await client.query(`CREATE TABLE IF NOT EXISTS recipe_categories (
+                recipe_id INT REFERENCES recipes(id) ON DELETE CASCADE,
+                category_id INT REFERENCES categories(id) ON DELETE CASCADE,
+                PRIMARY KEY (recipe_id, category_id)
+            );`);
             console.log('Tables created or already exist.');
 
             // Seed categories
