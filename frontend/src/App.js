@@ -1,78 +1,48 @@
-import React, { useEffect, useState } from 'react';
-
-const API_URL = process.env.REACT_APP_API_URL;
+import React, { useEffect, useState, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ModulesMenu from './pages/Root/ModulesMenu';
 
 function App() {
-  const [recipes, setRecipes] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch all recipes
   useEffect(() => {
-    setLoading(true);
-    fetch(`${API_URL}/recipes/recipies`)
+    fetch(`${process.env.REACT_APP_API_URL}/modules`)
       .then(res => res.json())
       .then(data => {
-        setRecipes(data.recipes || []);
+        setModules(data.modules || []);
         setLoading(false);
       });
   }, []);
 
-  // Fetch details for a selected recipe
-  const handleSelect = (id) => {
-    setLoading(true);
-    fetch(`${API_URL}/recipes/recipies/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        setSelected(data);
-        setLoading(false);
-      });
+  const getModuleHomeComponent = (name) => {
+    switch (name) {
+      case 'recipies':
+        return React.lazy(() => import('./pages/Recipes/RecipesHome'));
+      default:
+        return () => <div>Module not found</div>;
+    }
   };
 
+  if (loading) return <div>Loading...</div>;
+
   return (
-    <div style={{ maxWidth: 800, margin: '2rem auto', fontFamily: 'sans-serif' }}>
-      <h1>Recipes</h1>
-      {loading && <p>Loading...</p>}
-      <ul>
-        {recipes.map(r => (
-          <li key={r.id}>
-            <button style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={() => handleSelect(r.id)}>
-              {r.title}
-            </button>
-          </li>
-        ))}
-      </ul>
-      {selected && (
-        <div style={{ marginTop: '2rem', border: '1px solid #ccc', padding: '1rem' }}>
-          <h2>{selected.title}</h2>
-          <p><strong>Instructions:</strong> {selected.instructions}</p>
-          <h3>Ingredients</h3>
-          <ul>
-            {selected.ingredients && selected.ingredients.length > 0 ? (
-              selected.ingredients.map(ing => (
-                <li key={ing.id}>
-                  {ing.quantity_amount} {ing.quantity} {ing.name}
-                </li>
-              ))
-            ) : (
-              <li>No ingredients listed.</li>
-            )}
-          </ul>
-          <h3>Categories</h3>
-          <ul>
-            {selected.categories && selected.categories.length > 0 ? (
-              selected.categories.map(cat => (
-                <li key={cat.id}>{cat.name}</li>
-              ))
-            ) : (
-              <li>No categories listed.</li>
-            )}
-          </ul>
-          <button onClick={() => setSelected(null)} style={{ marginTop: '1rem' }}>Back to list</button>
-        </div>
-      )}
-    </div>
+    <Router>
+      <Suspense fallback={<div>Loading module...</div>}>
+        <Routes>
+          <Route path="/" element={<ModulesMenu />} />
+          {modules.map(mod => (
+            <Route
+              key={mod.name}
+              path={`/${mod.name}/home`}
+              element={React.createElement(getModuleHomeComponent(mod.name))}
+            />
+          ))}
+          <Route path="/recipies/create" element={React.createElement(React.lazy(() => import('./pages/Recipes/RecipeCreate')))} />
+          <Route path="/recipies/edit/:id" element={React.createElement(React.lazy(() => import('./pages/Recipes/RecipeEdit')))} />
+        </Routes>
+      </Suspense>
+    </Router>
   );
 }
 
