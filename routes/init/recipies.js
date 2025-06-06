@@ -104,9 +104,9 @@ module.exports = (pool) => {
                 `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity_amount, quantity_id)
                  VALUES
                  ($1, $2, 2, $3),
-                 ($1, $4, 2, $3),
-                 ($1, $5, 1, $6),
-                 ($1, $7, 1, $8)
+                 ($1, $4, 2, $5),
+                 ($1, $6, 1, $7),
+                 ($1, $8, 1, $9)
                  ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
                 [
                     sandwichId,
