@@ -3,26 +3,25 @@ const express = require('express');
 module.exports = (pool) => {
     const router = express.Router();
 
-    // Create table schema (run once, or use migration tools)
     router.get('/', async (req, res) => {
+        const client = await pool.connect();
         try {
-            await pool.query(`
+            await client.query('BEGIN');
+
+            await client.query(`
                 CREATE TABLE IF NOT EXISTS recipes (
                     id SERIAL PRIMARY KEY,
                     title TEXT NOT NULL,
                     instructions TEXT
                 );
-
                 CREATE TABLE IF NOT EXISTS ingredients (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL
                 );
-
                 CREATE TABLE IF NOT EXISTS quantities (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL
                 );
-
                 CREATE TABLE IF NOT EXISTS recipe_ingredients (
                     recipe_id INT REFERENCES recipes(id),
                     ingredient_id INT REFERENCES ingredients(id),
@@ -30,40 +29,41 @@ module.exports = (pool) => {
                     quantity_id INT REFERENCES quantities(id),
                     PRIMARY KEY (recipe_id, ingredient_id)
                 );
-
                 CREATE TABLE IF NOT EXISTS categories (
                     id SERIAL PRIMARY KEY,
                     name TEXT UNIQUE NOT NULL
                 );
-
                 CREATE TABLE IF NOT EXISTS recipe_categories (
                     recipe_id INT REFERENCES recipes(id) ON DELETE CASCADE,
                     category_id INT REFERENCES categories(id) ON DELETE CASCADE,
                     PRIMARY KEY (recipe_id, category_id)
                 );
             `);
+            console.log('Tables created or already exist.');
 
             // Seed categories
             const categories = ['sandwich', 'stovetop', 'quick', 'vegetarian'];
             const categoryIds = {};
             for (const name of categories) {
-                const result = await pool.query(
+                const result = await client.query(
                     'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id',
                     [name]
                 );
                 categoryIds[name] = result.rows[0].id;
             }
+            console.log('Categories seeded:', categoryIds);
 
             // Seed quantities
             const quantities = ['slice', 'cup', 'tablespoon', 'teaspoon', 'piece'];
             const quantityIds = {};
             for (const name of quantities) {
-                const result = await pool.query(
+                const result = await client.query(
                     'INSERT INTO quantities (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id',
                     [name]
                 );
                 quantityIds[name] = result.rows[0].id;
             }
+            console.log('Quantities seeded:', quantityIds);
 
             // Seed ingredients
             const ingredients = [
@@ -71,16 +71,16 @@ module.exports = (pool) => {
             ];
             const ingredientIds = {};
             for (const name of ingredients) {
-                const result = await pool.query(
+                const result = await client.query(
                     'INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id',
                     [name]
                 );
                 ingredientIds[name] = result.rows[0].id;
             }
+            console.log('Ingredients seeded:', ingredientIds);
 
             // Seed recipes
-            // 1. Ham and Cheese Sandwich
-            const sandwichResult = await pool.query(
+            const sandwichResult = await client.query(
                 `INSERT INTO recipes (title, instructions) VALUES ($1, $2)
                  ON CONFLICT (title) DO UPDATE SET instructions=EXCLUDED.instructions RETURNING id`,
                 [
@@ -90,8 +90,7 @@ module.exports = (pool) => {
             );
             const sandwichId = sandwichResult.rows[0].id;
 
-            // 2. Rice on the Stovetop
-            const riceResult = await pool.query(
+            const riceResult = await client.query(
                 `INSERT INTO recipes (title, instructions) VALUES ($1, $2)
                  ON CONFLICT (title) DO UPDATE SET instructions=EXCLUDED.instructions RETURNING id`,
                 [
@@ -100,9 +99,10 @@ module.exports = (pool) => {
                 ]
             );
             const riceId = riceResult.rows[0].id;
+            console.log('Recipes seeded:', { sandwichId, riceId });
 
             // Seed recipe_ingredients for Ham and Cheese Sandwich
-            await pool.query(
+            await client.query(
                 `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity_amount, quantity_id)
                  VALUES
                  ($1, $2, 2, $3),
@@ -118,9 +118,8 @@ module.exports = (pool) => {
                     ingredientIds['butter'], quantityIds['tablespoon']
                 ]
             );
-
             // Seed recipe_ingredients for Rice on the Stovetop
-            await pool.query(
+            await client.query(
                 `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity_amount, quantity_id)
                  VALUES
                  ($1, $2, 1, $3),
@@ -134,27 +133,32 @@ module.exports = (pool) => {
                     ingredientIds['salt'], quantityIds['teaspoon']
                 ]
             );
+            console.log('Recipe ingredients seeded.');
 
             // Seed recipe_categories for Ham and Cheese Sandwich
-            await pool.query(
+            await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
                  VALUES ($1, $2), ($1, $3)
                  ON CONFLICT DO NOTHING`,
                 [sandwichId, categoryIds['sandwich'], categoryIds['quick']]
             );
-
             // Seed recipe_categories for Rice on the Stovetop
-            await pool.query(
+            await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
                  VALUES ($1, $2), ($1, $3)
                  ON CONFLICT DO NOTHING`,
                 [riceId, categoryIds['stovetop'], categoryIds['vegetarian']]
             );
+            console.log('Recipe categories seeded.');
 
+            await client.query('COMMIT');
             res.send('Tables initialized and seeded.');
         } catch (err) {
+            if (client) await client.query('ROLLBACK');
             console.error(err);
             res.status(500).send('Error initializing or seeding schema');
+        } finally {
+            if (client) client.release();
         }
     });
 
