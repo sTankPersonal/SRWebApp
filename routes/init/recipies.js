@@ -137,14 +137,14 @@ module.exports = (pool) => {
             await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
                  VALUES ($1, $2), ($1, $3)
-                 ON CONFLICT DO NOTHING`,
+                 ON CONFLICT (recipe_id, category_id) DO NOTHING`,
                 [sandwichId, categoryIds['sandwich'], categoryIds['quick']]
             );
             // Seed recipe_categories for Rice on the Stovetop
             await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
                  VALUES ($1, $2), ($1, $3)
-                 ON CONFLICT DO NOTHING`,
+                 ON CONFLICT (recipe_id, category_id) DO NOTHING`,
                 [riceId, categoryIds['stovetop'], categoryIds['vegetarian']]
             );
             console.log('Recipe categories seeded.');
