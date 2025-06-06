@@ -10,7 +10,7 @@ module.exports = (pool) => {
 
             await client.query(`CREATE TABLE IF NOT EXISTS recipes (
                 id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
+                title TEXT UNIQUE NOT NULL,
                 instructions TEXT
             );`);
             await client.query(`CREATE TABLE IF NOT EXISTS ingredients (
@@ -136,16 +136,16 @@ module.exports = (pool) => {
             // Seed recipe_categories for Ham and Cheese Sandwich
             await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
-                 VALUES ($1, $2), ($1, $3)
+                 VALUES ($1, $2), ($3, $4)
                  ON CONFLICT (recipe_id, category_id) DO NOTHING`,
-                [sandwichId, categoryIds['sandwich'], categoryIds['quick']]
+                [sandwichId, categoryIds['sandwich'], sandwichId,  categoryIds['quick']]
             );
             // Seed recipe_categories for Rice on the Stovetop
             await client.query(
                 `INSERT INTO recipe_categories (recipe_id, category_id)
-                 VALUES ($1, $2), ($1, $3)
+                 VALUES ($1, $2), ($3, $4)
                  ON CONFLICT (recipe_id, category_id) DO NOTHING`,
-                [riceId, categoryIds['stovetop'], categoryIds['vegetarian']]
+                [riceId, categoryIds['stovetop'], riceId, categoryIds['vegetarian']]
             );
             console.log('Recipe categories seeded.');
 
