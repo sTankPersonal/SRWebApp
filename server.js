@@ -24,11 +24,11 @@ const quantitiesRouter = require('./routes/recipes/quantities')(pool);
 const initRecipiesRouter = require('./routes/init/recipies')(pool);
 
 // Base route for all recipe-related modules
-app.use('/recipes/recipies', recipeRouter);
-app.use('/recipes/ingredients', ingredientsRouter);
-app.use('/recipes/categories', categoriesRouter);
-app.use('/recipes/quantities', quantitiesRouter);
-app.use('/init/recipies', initRecipiesRouter);
+app.use('/api/recipes/recipies', recipeRouter);
+app.use('/api/recipes/ingredients', ingredientsRouter);
+app.use('/api/recipes/categories', categoriesRouter);
+app.use('/api/recipes/quantities', quantitiesRouter);
+app.use('/api/init/recipies', initRecipiesRouter);
 
 
 app.listen(port, () => {
