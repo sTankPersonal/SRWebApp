@@ -16,13 +16,20 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-// Test route
-app.get('/', (req, res) => {
-    res.send('Recipe API is running!');
-});
+// Import routers
+const recipeRouter = require('./routes/recipes/recipe')(pool);
+const ingredientsRouter = require('./routes/recipes/ingredients')(pool);
+const categoriesRouter = require('./routes/recipes/categories')(pool);
+const quantitiesRouter = require('./routes/recipes/quantities')(pool);
+
+// Base route for all recipe-related modules
+app.use('/recipes/recipies', recipeRouter);
+app.use('/recipes/ingredients', ingredientsRouter);
+app.use('/recipes/categories', categoriesRouter);
+app.use('/recipes/quantities', quantitiesRouter);
 
 // Create table schema (run once, or use migration tools)
-app.get('/init', async (req, res) => {
+app.get('/init/recipies', async (req, res) => {
     try {
         await pool.query(`
       CREATE TABLE IF NOT EXISTS recipes (
@@ -36,43 +43,34 @@ app.get('/init', async (req, res) => {
         name TEXT UNIQUE NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS quantities (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS recipe_ingredients (
         recipe_id INT REFERENCES recipes(id),
         ingredient_id INT REFERENCES ingredients(id),
-        quantity TEXT,
+        quantity_amount NUMERIC CHECK (quantity_amount > 0),
+        quantity_id INT REFERENCES quantities(id),
         PRIMARY KEY (recipe_id, ingredient_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS recipe_categories (
+        recipe_id INT REFERENCES recipes(id) ON DELETE CASCADE,
+        category_id INT REFERENCES categories(id) ON DELETE CASCADE,
+        PRIMARY KEY (recipe_id, category_id)
       );
     `);
         res.send('Tables initialized.');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error initializing schema');
-    }
-});
-
-// Add new recipe (simplified, expects title and instructions only)
-app.post('/recipes', async (req, res) => {
-    const { title, instructions } = req.body;
-    try {
-        const result = await pool.query(
-            'INSERT INTO recipes (title, instructions) VALUES ($1, $2) RETURNING *',
-            [title, instructions]
-        );
-        res.status(201).json(result.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error adding recipe');
-    }
-});
-
-// List all recipes
-app.get('/recipes', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM recipes ORDER BY id DESC');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error fetching recipes');
     }
 });
 
