@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './Recipes.css';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -25,18 +26,34 @@ const RecipeCreate = () => {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto' }}>
+    <div className="recipes-container">
       <h2>Create Recipe</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Title: <input value={title} onChange={e => setTitle(e.target.value)} required /></label>
+        <div style={{ marginBottom: '1rem' }}>
+          <label>
+            Title:
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              required
+              style={{ marginLeft: 8, padding: '0.5rem', borderRadius: 4, border: '1px solid #ccc' }}
+            />
+          </label>
         </div>
-        <div>
-          <label>Instructions: <textarea value={instructions} onChange={e => setInstructions(e.target.value)} required /></label>
+        <div style={{ marginBottom: '1rem' }}>
+          <label>
+            Instructions:
+            <textarea
+              value={instructions}
+              onChange={e => setInstructions(e.target.value)}
+              required
+              style={{ marginLeft: 8, padding: '0.5rem', borderRadius: 4, border: '1px solid #ccc', width: '100%', minHeight: 80 }}
+            />
+          </label>
         </div>
         <button type="submit">Create</button>
-        <button type="button" onClick={() => navigate('/recipies/home')}>Cancel</button>
+        <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate('/recipies/home')}>Cancel</button>
       </form>
     </div>
   );
