@@ -1,5 +1,5 @@
 const express = require('express');
-const fetch = require('node-fetch'); // If using Node 18+, you can use global fetch
+const https = require('https');
 const router = express.Router();
 
 // In-memory store for 10 trivia questions
@@ -47,19 +47,32 @@ router.put('/', (req, res) => {
   res.json({ success: true });
 });
 
+function getOpenTDBQuestions(callback) {
+  https.get('https://opentdb.com/api.php?amount=10&type=multiple', (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(data);
+        callback(null, json);
+      } catch (err) {
+        callback(err);
+      }
+    });
+  }).on('error', (err) => {
+    callback(err);
+  });
+}
+
 // Admin: Refresh questions from OpenTDB
-router.post('/refresh', async (req, res) => {
-  try {
-    const response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
-    const data = await response.json();
-    if (!data.results || data.results.length !== 10) {
+router.post('/refresh', (req, res) => {
+  getOpenTDBQuestions((err, data) => {
+    if (err || !data.results || data.results.length !== 10) {
       return res.status(500).json({ error: 'Failed to fetch 10 questions from OpenTDB.' });
     }
     triviaQuestions = formatOpenTDBQuestions(data.results);
     res.json({ success: true, questions: triviaQuestions });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch questions from OpenTDB.' });
-  }
+  });
 });
 
 module.exports = router;
